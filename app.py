@@ -1,4 +1,4 @@
-from flask import Flask, request, jsonify, send_from_directory, session, render_template
+from flask import Flask, request, jsonify, send_from_directory, render_template, session
 import os
 import json
 import random
@@ -25,6 +25,20 @@ if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 
+# ========================== SERVE FRONTEND ==========================
+
+@app.route("/")
+def index():
+    """Serve the main frontend page."""
+    return render_template("index.html")
+
+
+@app.route("/<path:path>")
+def serve_static(path):
+    """Serve static files like CSS and JavaScript."""
+    return send_from_directory("static", path)
+
+
 # ========================== USER AUTHENTICATION ==========================
 
 def generate_password(length=8):
@@ -47,7 +61,6 @@ def load_users():
         with open(USER_DB, "w") as f:
             json.dump(users, f, indent=4)
 
-        # ✅ Print test users and their passwords
         print("Test users created:")
         for username, password in users["users"].items():
             print(f"User: {username} | Password: {password}")
@@ -60,7 +73,6 @@ def load_users():
             if "users" not in users:
                 raise KeyError
 
-        # ✅ Print loaded users and passwords
         print("Loaded users:")
         for username, password in users["users"].items():
             print(f"User: {username} | Password: {password}")
@@ -74,7 +86,6 @@ def load_users():
             json.dump(users, f, indent=4)
 
         return users["users"]
-
 
 
 # Load users at startup
@@ -197,7 +208,7 @@ def list_routes():
     return jsonify({"routes": output})
 
 
+# Run Flask on Render with dynamic port assignment
 port = int(os.environ.get("PORT", 5000))
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=port)
-
