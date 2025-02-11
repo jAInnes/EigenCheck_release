@@ -20,3 +20,4 @@ __pycache__/
 
 # Uploads Folder (if it contains temporary user files)
 uploads/
+users.json
