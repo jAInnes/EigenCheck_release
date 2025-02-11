@@ -1,1 +1,31 @@
-__pycache__/\n*.pyc\n*.pyo\nvenv/\n*.o\n*.out\n*.exe\nuploads/\n.git/
+# 🔥 Python-related files
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+venv/
+
+# 🔥 C Compiled Files
+*.o
+*.out
+*.exe
+
+# 🔥 Logs & Temporary Files
+*.log
+*.tmp
+
+# 🔥 System Files (Mac & Windows)
+.DS_Store
+Thumbs.db
+
+# 🔥 IDE & Editor Configs
+.vscode/
+.idea/
+
+# 🔥 Uploaded User Files (Optional, if not needed in repo)
+uploads/
+
+# 🔥 Git-Specific Files
+.git/
+.gitignore
+users.json
