@@ -7,39 +7,22 @@ import subprocess
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 
-# Initialize Flask app
+# Initialize Flask
 app = Flask(__name__, template_folder="templates", static_folder="static")
-CORS(app, supports_credentials=True)  
+CORS(app, supports_credentials=True, origins="*")  # Allow frontend access
 app.secret_key = "supersecretkey"
 
 # Configuration
 UPLOAD_FOLDER = "uploads"
 USER_DB = "users.json"
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
-app.config["SESSION_COOKIE_HTTPONLY"] = False  
-app.config["SESSION_COOKIE_SAMESITE"] = "None"  
-app.config["SESSION_COOKIE_SECURE"] = True  
 
-# Ensure necessary directories exist
+# Ensure uploads directory exists
 if not os.path.exists(UPLOAD_FOLDER):
     os.makedirs(UPLOAD_FOLDER)
 
 
-# ========================== SERVE FRONTEND ==========================
-
-@app.route("/")
-def index():
-    """Serve the main frontend page."""
-    return render_template("index.html")
-
-
-@app.route("/<path:path>")
-def serve_static(path):
-    """Serve static files like CSS and JavaScript."""
-    return send_from_directory("static", path)
-
-
-# ========================== USER AUTHENTICATION ==========================
+# ========================== FIXED USER AUTHENTICATION ==========================
 
 def generate_password(length=8):
     """Generate a random password."""
@@ -49,43 +32,31 @@ def generate_password(length=8):
 
 def create_test_users(count=5):
     """Create test users with randomly generated passwords."""
-    users = {f"testuser{i}": generate_password() for i in range(1, count + 1)}
-    return users
+    return {f"testuser{i}": generate_password() for i in range(1, count + 1)}
 
 
 def load_users():
-    """Load or initialize the user database."""
+    """Load or initialize the user database only if needed."""
     if not os.path.exists(USER_DB):
         print("users.json not found, creating it now...")
         users = {"users": create_test_users(5)}
         with open(USER_DB, "w") as f:
             json.dump(users, f, indent=4)
+        print("✅ Test users created:")
+    else:
+        try:
+            with open(USER_DB, "r") as f:
+                users = json.load(f)
+                if "users" not in users:
+                    raise KeyError
+            print("✅ Loaded users successfully")
+        except (json.JSONDecodeError, KeyError):
+            print("⚠️ users.json corrupted. Resetting...")
+            users = {"users": {"admin": "password123"}}
+            with open(USER_DB, "w") as f:
+                json.dump(users, f, indent=4)
 
-        print("Test users created:")
-        for username, password in users["users"].items():
-            print(f"User: {username} | Password: {password}")
-
-        return users["users"]
-
-    try:
-        with open(USER_DB, "r") as f:
-            users = json.load(f)
-            if "users" not in users:
-                raise KeyError
-
-        print("Loaded users:")
-        for username, password in users["users"].items():
-            print(f"User: {username} | Password: {password}")
-
-        return users["users"]
-
-    except (json.JSONDecodeError, KeyError):
-        print("users.json was corrupted. Resetting it...")
-        users = {"users": {"admin": "password123"}}
-        with open(USER_DB, "w") as f:
-            json.dump(users, f, indent=4)
-
-        return users["users"]
+    return users["users"]
 
 
 # Load users at startup
@@ -105,6 +76,7 @@ def login():
         session["logged_in"] = True
         session["username"] = data["username"]
         session.permanent = True  
+        print(f"✅ Login erfolgreich für {data['username']}")
         return jsonify({"message": "Login erfolgreich", "status": "success", "username": data["username"]})
 
     return jsonify({"message": "Falscher Benutzername oder Passwort", "status": "error"}), 401
@@ -196,7 +168,19 @@ def run_c_program():
         return jsonify({"error": str(e)})
 
 
-# ========================== DEBUGGING & SERVER START ==========================
+# ========================== FRONTEND & SERVER CONFIG ==========================
+
+@app.route("/")
+def index():
+    """Serve the main frontend page."""
+    return render_template("index.html")
+
+
+@app.route("/<path:path>")
+def serve_static(path):
+    """Serve static files like CSS and JavaScript."""
+    return send_from_directory("static", path)
+
 
 @app.route("/routes", methods=["GET"])
 def list_routes():
