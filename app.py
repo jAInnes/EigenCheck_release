@@ -8,7 +8,8 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 
 # Initialize Flask app
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, template_folder="templates", static_folder="templates/static")
+
 CORS(app, supports_credentials=True)  
 app.secret_key = "supersecretkey"
 
