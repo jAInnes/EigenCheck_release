@@ -1,5 +1,9 @@
 //  Backend URL (Change if needed)
-const BACKEND_URL = "http://127.0.0.1:5000";
+// Automatically detect if running locally or on Render
+const BACKEND_URL = window.location.hostname.includes("render.com")
+    ? window.location.origin  // Uses the Render domain dynamically
+    : "http://127.0.0.1:5000";  // Fallback for local testing
+
 
 //  Login Function
 function login() {
