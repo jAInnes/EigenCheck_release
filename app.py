@@ -37,31 +37,34 @@ def create_test_users(count=5):
 
 
 def load_users():
-    """Load or initialize the user database only if needed."""
+    users = {}
+    
     if not os.path.exists(USER_DB):
-        print("users.json not found, creating it now...")
+        print("🔧 users.json not found, creating it now...", flush=True)  # ✅ Flush immediately
         users = {"users": create_test_users(5)}
         with open(USER_DB, "w") as f:
             json.dump(users, f, indent=4)
-        print("✅ Test users created:")
-    else:
-        try:
-            with open(USER_DB, "r") as f:
-                users = json.load(f)
-                if "users" not in users:
-                    raise KeyError
-            print("✅ Loaded users successfully")
-        except (json.JSONDecodeError, KeyError):
-            print("⚠️ users.json corrupted. Resetting...")
-            users = {"users": {"admin": "password123"}}
-            with open(USER_DB, "w") as f:
-                json.dump(users, f, indent=4)
+        print("\n✅ Test users created:", users, "\n", flush=True)
+        return users["users"]
 
-    return users["users"]
+    try:
+        with open(USER_DB, "r") as f:
+            users = json.load(f)
+            if "users" not in users:
+                raise KeyError
+            print("\n🔐 Loaded users:", users["users"], "\n", flush=True)  # ✅ Flush log
+            return users["users"]
+    except (json.JSONDecodeError, KeyError):
+        print("⚠️ users.json was corrupted. Resetting it...", flush=True)
+        users = {"users": {"admin": "password123"}}
+        with open(USER_DB, "w") as f:
+            json.dump(users, f, indent=4)
+        return users["users"]
 
-
-# Load users at startup
+# ✅ Load users at startup
 users = load_users()
+print("\n✅ users.json successfully loaded! Current Users:", users, flush=True)
+
 
 
 @app.route("/login", methods=["POST"])
