@@ -52,8 +52,10 @@ function uploadFile() {
     })
     .then(response => response.json())
     .then(data => {
-        document.getElementById("uploadStatus").innerText = data.message;
-        if (!data.error) {
+        if (data.error) {
+            document.getElementById("uploadStatus").innerHTML = `❌ Fehler: ${data.error}`;
+        } else {
+            document.getElementById("uploadStatus").innerHTML = `✅ Datei hochgeladen: <strong>${fileInput.name}</strong>`;
             document.getElementById("runSection").classList.remove("hidden");
         }
     })
@@ -83,10 +85,17 @@ function runCProgram() {
     })
     .then(response => response.json())
     .then(data => {
+        let runStatus = document.getElementById("runStatus");
+        runStatus.innerHTML = "";  // Ausgabe zurücksetzen
+
         if (data.error) {
-            document.getElementById("runStatus").innerText = `❌ Fehler: ${data.error}`;
+            runStatus.innerHTML += `<p style="color: red;">❌ Fehler: ${data.error}</p>`;
+            if (data.details) {
+                runStatus.innerHTML += `<pre>${data.details}</pre>`;
+            }
         } else {
-            document.getElementById("runStatus").innerText = `✅ Ausgabe: ${data.output}`;
+            runStatus.innerHTML += `<p style="color: green;">✅ Programm erfolgreich ausgeführt</p>`;
+            runStatus.innerHTML += `<pre>${data.output}</pre>`;
         }
     })
     .catch(error => console.error("❌ Fehler beim Ausführen:", error));
