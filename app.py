@@ -171,16 +171,20 @@ def run_c_program():
     compile_cmd = ["gcc", filepath, "-o", executable]
     run_cmd = [executable]
 
+    input_file = "aufgabe2.dat"
+    expected_file = "expected.txt"
     try:
-        # Compile the C program
-        compile_result = subprocess.run(compile_cmd, capture_output=True, text=True)
-        if compile_result.returncode != 0:
-            return jsonify({"error": "Kompilierungsfehler", "details": compile_result.stderr})
-
-        # Run the compiled executable
-        run_result = subprocess.run(run_cmd, capture_output=True, text=True)
+        # 1. Kompilieren mit make
+        make_command = ["make"]
+        make_result = subprocess.run(make_command, capture_output=True, text=True)
+        if make_result.returncode != 0:
+            return jsonify({"error": "Fehler beim Kompilieren", "details": make_result.stderr})
+        
+        # 2. Ausführen des kompilierten Programms
+        run_command = ["./main.out", input_file, expected_file]
+        run_result = subprocess.run(run_command, capture_output=True, text=True)
+        
         return jsonify({"message": "Programm erfolgreich ausgeführt", "output": run_result.stdout})
-
     except Exception as e:
         return jsonify({"error": str(e)})
 
