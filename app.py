@@ -163,6 +163,12 @@ def run_c_program():
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
+    username = session.get("username")
+    user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
+
+    if not os.path.exists(user_folder):
+        return jsonify({"error": "Benutzerordner nicht gefunden!"}), 404
+
     if "file" not in request.files:
         return jsonify({"error": "Keine Datei hochgeladen"}), 400
 
@@ -174,25 +180,29 @@ def run_c_program():
     if not filename.endswith(".c"):
         return jsonify({"error": "Nur C-Dateien erlaubt!"}), 400
 
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+    filepath = os.path.join(user_folder, filename)
     file.save(filepath)
 
-    executable = filepath.replace(".c", "")
-    compile_cmd = ["gcc", filepath, "-o", executable]
-    run_cmd = [executable]
+    # ✅ Compilation and Execution
+    input_file = os.path.join(user_folder, "aufgabe2.dat")
+    expected_file = os.path.join(user_folder, "expected.txt")
 
     try:
-        # Compile the C program
-        compile_result = subprocess.run(compile_cmd, capture_output=True, text=True)
-        if compile_result.returncode != 0:
-            return jsonify({"error": "Kompilierungsfehler", "details": compile_result.stderr})
+        # 1. Run `make` inside user's directory
+        make_command = ["make", "-C", user_folder]
+        make_result = subprocess.run(make_command, capture_output=True, text=True)
+        if make_result.returncode != 0:
+            return jsonify({"error": "Fehler beim Kompilieren", "details": make_result.stderr})
 
-        # Run the compiled executable
-        run_result = subprocess.run(run_cmd, capture_output=True, text=True)
+        # 2. Execute compiled `main.out` inside user's directory
+        run_command = [os.path.join(user_folder, "main.out"), input_file, expected_file]
+        run_result = subprocess.run(run_command, capture_output=True, text=True)
+
         return jsonify({"message": "Programm erfolgreich ausgeführt", "output": run_result.stdout})
-
+    
     except Exception as e:
         return jsonify({"error": str(e)})
+
 
 
 # ========================== DEBUGGING & SERVER START ==========================
