@@ -1,38 +1,46 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="de">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>EigenCheck - Frontend Draft</title>
+    <title>Numerik-Testumgebung | Hochschule Hannover</title>
+    <link rel="stylesheet" href="styles.css"> <!--  Use Updated CSS -->
 </head>
+<header>
+    <img src="assets/logo.png" alt="HSH Logo" class="logo">
+    <h1>EigenCheck</h1>
+</header>
+
+
 <body>
+    <div class="container">
+        <h1>EigenCheck</h1>
 
-
-    <main>
-        <!-- Login Section -->
-        <section id="loginSection">
+        <!--  Login Section -->
+        <div id="loginSection">
             <h2>Login</h2>
-            <input type="text" id="username" placeholder="Username">
-            <input type="password" id="password" placeholder="Password">
+            <input type="text" id="username" placeholder="Benutzername">
+            <input type="password" id="password" placeholder="Passwort">
             <button onclick="login()">Login</button>
             <p id="loginStatus"></p>
-        </section>
+        </div>
 
-        <!-- Upload Section (Hidden Initially) -->
-        <section id="uploadSection" class="hidden">
-            <h2>Upload File</h2>
+        <!--  Upload Section (Hidden Initially) -->
+        <div id="uploadSection" class="hidden">
+            <h2>Datei hochladen</h2>
             <input type="file" id="fileInput">
-            <button onclick="uploadFile()">Upload</button>
+            <button onclick="uploadFile()">Hochladen</button>
             <p id="uploadStatus"></p>
-        </section>
+        </div>
 
-        <!-- Run Section (Hidden Initially) -->
-        <section id="runSection" class="hidden">
-            <h2>Run Program</h2>
-            <button onclick="runCProgram()">Run</button>
+        <!--  Run Section (Hidden Initially) -->
+        <div id="runSection" class="hidden">
+            <h2>Programm ausführen</h2>
+            <button onclick="runCProgram()">Ausführen</button>
             <p id="runStatus"></p>
-        </section>
-    </main>
+        </div>
+    </div>
+
 
     <script src="static/script.js"></script>
 
