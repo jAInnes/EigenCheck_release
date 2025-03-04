@@ -1,0 +1,108 @@
+/*  Hochschule Hannover Theme */
+:root {
+    --primary-color: #8AB800; /* Hochschule Green */
+    --secondary-color: #4A4A4A; /* Dark Gray */
+    --background-light: #F5F5F5; /* Light Gray */
+    --accent-color: #E6E6E6; /* Lighter Gray */
+    --text-color: #333;
+    --button-hover: #6A9600;
+}
+
+/*  Global Styles */
+body {
+    font-family: "Arial", sans-serif;
+    background: var(--background-light);
+    color: var(--text-color);
+    text-align: center;
+    margin: 0;
+    padding: 0;
+}
+
+/*  Main Container */
+.container {
+    max-width: 600px;
+    margin: 50px auto;
+    padding: 30px;
+    background: white;
+    border-radius: 10px;
+    box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.1);
+}
+
+/*  Headings */
+h1 {
+    color: var(--primary-color);
+    font-size: 24px;
+    font-weight: bold;
+    margin-bottom: 15px;
+}
+
+h2 {
+    font-size: 20px;
+    color: var(--secondary-color);
+    margin-bottom: 10px;
+}
+
+/*  Inputs */
+input {
+    width: 90%;
+    padding: 12px;
+    margin: 10px 0;
+    border: 2px solid var(--accent-color);
+    border-radius: 5px;
+    font-size: 16px;
+    text-align: center;
+    transition: all 0.3s ease;
+}
+
+input:focus {
+    border-color: var(--primary-color);
+    outline: none;
+}
+
+/*  Buttons */
+button {
+    width: 95%;
+    padding: 12px;
+    margin: 10px 0;
+    background-color: var(--primary-color);
+    color: white;
+    font-size: 16px;
+    font-weight: bold;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+button:hover {
+    background-color: var(--button-hover);
+}
+
+/*  Status Messages */
+p {
+    font-weight: bold;
+    color: var(--secondary-color);
+}
+
+/*  Hide Sections by Default */
+.hidden {
+    display: none;
+}
+
+/*  Responsive Design */
+@media (max-width: 768px) {
+    .container {
+        max-width: 90%;
+    }
+
+    input, button {
+        width: 100%;
+    }
+}
+.logo {
+    position: absolute; /* Fixes position to top-left */
+    top: 10px; /* Distance from top */
+    left: 10px; /* Distance from left */
+    width: 100px; /* Adjust logo size */
+    height: auto;
+}

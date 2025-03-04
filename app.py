@@ -8,7 +8,8 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 
 # Initialize Flask app
-app = Flask(__name__, template_folder="templates", static_folder="static")
+app = Flask(__name__, template_folder="templates", static_folder="templates/static")
+
 CORS(app, supports_credentials=True)  
 app.secret_key = "supersecretkey"
 
@@ -122,6 +123,8 @@ def upload_file():
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
+    username = session.get("username")  # Get logged-in user's username
+
     if "file" not in request.files:
         return jsonify({"error": "Keine Datei hochgeladen"}), 400
 
@@ -130,10 +133,17 @@ def upload_file():
         return jsonify({"error": "Keine Datei ausgewählt"}), 400
 
     filename = secure_filename(file.filename)
-    filepath = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+
+    #  Create user-specific folder inside "uploads/"
+    user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
+    os.makedirs(user_folder, exist_ok=True)  # Create if doesn't exist
+
+    #  Save file inside the user's folder
+    filepath = os.path.join(user_folder, filename)
     file.save(filepath)
 
-    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen"}), 200
+    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen", "path": filepath}), 200
+
 
 
 @app.route("/files/<filename>", methods=["GET"])
