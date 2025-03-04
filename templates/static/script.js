@@ -67,27 +67,19 @@ function runCProgram() {
         return;
     }
 
-    let fileInput = document.getElementById("fileInput").files[0];
-    if (!fileInput) {
-        alert("Bitte eine Datei auswählen!");
-        return;
-    }
-
-    let formData = new FormData();
-    formData.append("file", fileInput);
-
     fetch(`${BACKEND_URL}/run`, {
         method: "POST",
-        body: formData,
         credentials: "include"
     })
     .then(response => response.json())
     .then(data => {
+        let outputText = "";
         if (data.error) {
-            document.getElementById("runStatus").innerText = `❌ Fehler: ${data.error}`;
+            outputText = `❌ Fehler: ${data.error}\n\n🔴 stderr:\n${data.stderr || "Keine Fehlermeldung"}\n🟢 stdout:\n${data.stdout || "Keine Ausgabe"}`;
         } else {
-            document.getElementById("runStatus").innerText = `✅ Ausgabe: ${data.output}`;
+            outputText = `✅ Programm erfolgreich ausgeführt\n\n🟢 stdout:\n${data.stdout}\n🔴 stderr:\n${data.stderr}`;
         }
+        document.getElementById("runStatus").innerText = outputText;
     })
     .catch(error => console.error("❌ Fehler beim Ausführen:", error));
 }

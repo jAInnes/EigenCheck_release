@@ -174,7 +174,7 @@ def get_file(filename):
 
 @app.route("/run", methods=["POST"])
 def run_c_program():
-    """Compile and execute an uploaded C program."""
+    """Compile and execute an uploaded C program, returning full output."""
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
@@ -186,20 +186,31 @@ def run_c_program():
 
     input_file = os.path.join(user_folder, "aufgabe2.dat")
     expected_file = os.path.join(user_folder, "expected.txt")
+    main_exec = os.path.join(user_folder, "main.out")
 
     try:
-        # 1. ✅ `make` aufrufen im User-Ordner
+        # 1. `make` ausführen
         make_command = ["make", "-C", user_folder]
         make_result = subprocess.run(make_command, capture_output=True, text=True)
-        if make_result.returncode != 0:
-            return jsonify({"error": "Fehler beim Kompilieren", "details": make_result.stderr})
 
-        # 2. ✅ `main.out` ausführen mit den vorgegebenen Eingabedateien
-        run_command = [os.path.join(user_folder, "main.out"), input_file, expected_file]
+        # ✅ Volle Ausgabe von `make` zurückgeben
+        if make_result.returncode != 0:
+            return jsonify({
+                "error": "Fehler beim Kompilieren",
+                "stderr": make_result.stderr,
+                "stdout": make_result.stdout
+            })
+
+        # 2. Programm ausführen
+        run_command = [main_exec, input_file, expected_file]
         run_result = subprocess.run(run_command, capture_output=True, text=True)
 
-        return jsonify({"message": "Programm erfolgreich ausgeführt", "output": run_result.stdout})
-    
+        return jsonify({
+            "message": "Programm erfolgreich ausgeführt",
+            "stdout": run_result.stdout,
+            "stderr": run_result.stderr
+        })
+
     except Exception as e:
         return jsonify({"error": str(e)})
 
