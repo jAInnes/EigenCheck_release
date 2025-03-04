@@ -117,13 +117,18 @@ def check_status():
 
 # ========================== FILE UPLOAD & RETRIEVAL ==========================
 
+import shutil  # ✅ Neu hinzugefügt für das Kopieren von Dateien
+
+COMPILATION_FOLDER = "compilation"
+
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    """Handle file uploads (only for logged-in users)."""
+    """Handle file uploads and copy necessary compilation files."""
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
-    username = session.get("username")  # Get logged-in user's username
+    username = session.get("username")
+    user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
 
     if "file" not in request.files:
         return jsonify({"error": "Keine Datei hochgeladen"}), 400
@@ -133,16 +138,26 @@ def upload_file():
         return jsonify({"error": "Keine Datei ausgewählt"}), 400
 
     filename = secure_filename(file.filename)
+    if not filename.endswith(".c"):
+        return jsonify({"error": "Nur C-Dateien erlaubt!"}), 400
 
-    #  Create user-specific folder inside "uploads/"
-    user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
-    os.makedirs(user_folder, exist_ok=True)  # Create if doesn't exist
+    # ✅ Stelle sicher, dass der User-Ordner existiert
+    if not os.path.exists(user_folder):
+        os.makedirs(user_folder)
 
-    #  Save file inside the user's folder
+    # ✅ Kopiere alle notwendigen Dateien aus `compilation/` in das User-Verzeichnis
+    for item in os.listdir(COMPILATION_FOLDER):
+        src = os.path.join(COMPILATION_FOLDER, item)
+        dest = os.path.join(user_folder, item)
+        if os.path.isfile(src):
+            shutil.copy(src, dest)
+
+    # ✅ Speichere die hochgeladene Datei des Users im gleichen Ordner
     filepath = os.path.join(user_folder, filename)
     file.save(filepath)
 
-    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen", "path": filepath}), 200
+    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen"}), 200
+
 
 
 
@@ -169,32 +184,17 @@ def run_c_program():
     if not os.path.exists(user_folder):
         return jsonify({"error": "Benutzerordner nicht gefunden!"}), 404
 
-    if "file" not in request.files:
-        return jsonify({"error": "Keine Datei hochgeladen"}), 400
-
-    file = request.files["file"]
-    if file.filename == "":
-        return jsonify({"error": "Keine Datei ausgewählt"}), 400
-
-    filename = secure_filename(file.filename)
-    if not filename.endswith(".c"):
-        return jsonify({"error": "Nur C-Dateien erlaubt!"}), 400
-
-    filepath = os.path.join(user_folder, filename)
-    file.save(filepath)
-
-    # ✅ Compilation and Execution
     input_file = os.path.join(user_folder, "aufgabe2.dat")
     expected_file = os.path.join(user_folder, "expected.txt")
 
     try:
-        # 1. Run `make` inside user's directory
+        # 1. ✅ `make` aufrufen im User-Ordner
         make_command = ["make", "-C", user_folder]
         make_result = subprocess.run(make_command, capture_output=True, text=True)
         if make_result.returncode != 0:
             return jsonify({"error": "Fehler beim Kompilieren", "details": make_result.stderr})
 
-        # 2. Execute compiled `main.out` inside user's directory
+        # 2. ✅ `main.out` ausführen mit den vorgegebenen Eingabedateien
         run_command = [os.path.join(user_folder, "main.out"), input_file, expected_file]
         run_result = subprocess.run(run_command, capture_output=True, text=True)
 
