@@ -1,8 +1,9 @@
 # Hauptprogramm
 MAIN=main
 
-# Alle Programme
-OBJECTS=$(MAIN).o ausgabe.o matrix_vector.o cholesky.o
+# Alle C-Quellcodes und Objektdateien
+SRC=$(MAIN).c ausgabe.c matrix_vector.c $(wildcard uploads/*.c)
+OBJECTS=$(SRC:.c=.o)
 
 # Welcher C-Compiler
 CC=gcc
@@ -34,12 +35,12 @@ EXPECTED_FILE=expected.txt
 # Ziel des Makefiles
 $(MAIN).out: $(OBJECTS)
 	$(LD) -o $(MAIN).out $(OBJECTS) $(LIBDIR) $(LIBS)
-	./$(MAIN).out $(INPUT_FILE) $(EXPECTED_FILE) 
+	./$(MAIN).out $(INPUT_FILE) $(EXPECTED_FILE)
 
 # Wie erzeugt man C-Objektdateien
 $(OBJECTS): %.o: %.c
-	$(CC) $(INCDIR) -c $(CFLAGS) $< -o $@
+	$(CC) $(INCDIR) -c $(CCFLAGS) $< -o $@
 
 clean:
-	rm *.o
-	rm *.out
+	rm -f *.o
+	rm -f *.out

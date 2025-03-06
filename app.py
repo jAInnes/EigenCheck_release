@@ -122,6 +122,12 @@ def upload_file():
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
+    # Löschen aller Dateien im Upload-Ordner, bevor die neue Datei hochgeladen wird
+    for filename in os.listdir(app.config["UPLOAD_FOLDER"]):
+        file_path = os.path.join(app.config["UPLOAD_FOLDER"], filename)
+        if os.path.isfile(file_path):
+            os.remove(file_path)  # Datei löschen
+
     if "file" not in request.files:
         return jsonify({"error": "Keine Datei hochgeladen"}), 400
 
@@ -147,7 +153,7 @@ def get_file(filename):
 
 # ========================== COMPILATION & EXECUTION ==========================
 
-@app.route("/run", methods=["POST"])
+@app.route("/run", methods=["POST"]) # hier nicht kopieren
 def run_c_program():
     """Compile and execute an uploaded C program."""
     if "logged_in" not in session or not session["logged_in"]:
