@@ -6,6 +6,29 @@ import string
 import subprocess
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
+import shutil  
+
+COMPILATION_FOLDER = "compilation"
+
+def compile_global_files():
+    """Kompiliert die gemeinsamen Dateien in `compilation/`."""
+    if not os.path.exists(COMPILATION_FOLDER):
+        os.makedirs(COMPILATION_FOLDER)
+
+    try:
+        make_command = ["make", "-C", COMPILATION_FOLDER]
+        make_result = subprocess.run(make_command, capture_output=True, text=True)
+
+        if make_result.returncode != 0:
+            print("❌ Fehler beim globalen Kompilieren:", make_result.stderr)
+        else:
+            print("✅ Globale Dateien erfolgreich kompiliert.")
+
+    except Exception as e:
+        print(f"❌ Fehler beim globalen Kompilieren: {str(e)}")
+
+# ✅ Kompiliere globale Dateien beim Start
+compile_global_files()
 
 # Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="templates/static")
@@ -117,18 +140,18 @@ def check_status():
 
 # ========================== FILE UPLOAD & RETRIEVAL ==========================
 
-import shutil  # ✅ Neu hinzugefügt für das Kopieren von Dateien
 
-COMPILATION_FOLDER = "compilation"
+
 
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    """Handle file uploads and copy necessary compilation files."""
+    """Speichert nur den User-Code und nutzt globale Dateien."""
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
     username = session.get("username")
     user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
+    os.makedirs(user_folder, exist_ok=True)
 
     if "file" not in request.files:
         return jsonify({"error": "Keine Datei hochgeladen"}), 400
@@ -141,22 +164,12 @@ def upload_file():
     if not filename.endswith(".c"):
         return jsonify({"error": "Nur C-Dateien erlaubt!"}), 400
 
-    # ✅ Stelle sicher, dass der User-Ordner existiert
-    if not os.path.exists(user_folder):
-        os.makedirs(user_folder)
-
-    # ✅ Kopiere alle notwendigen Dateien aus `compilation/` in das User-Verzeichnis
-    for item in os.listdir(COMPILATION_FOLDER):
-        src = os.path.join(COMPILATION_FOLDER, item)
-        dest = os.path.join(user_folder, item)
-        if os.path.isfile(src):
-            shutil.copy(src, dest)
-
-    # ✅ Speichere die hochgeladene Datei des Users im gleichen Ordner
+    # ✅ Speichere nur den User-Code in seinem Ordner
     filepath = os.path.join(user_folder, filename)
     file.save(filepath)
 
-    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen"}), 200
+    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen", "path": filepath}), 200
+
 
 
 
@@ -174,7 +187,7 @@ def get_file(filename):
 
 @app.route("/run", methods=["POST"])
 def run_c_program():
-    """Compile and execute an uploaded C program, returning full output."""
+    """Kompiliert nur `cholesky.c` des Users und führt `main.out` mit diesem aus."""
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
@@ -184,35 +197,60 @@ def run_c_program():
     if not os.path.exists(user_folder):
         return jsonify({"error": "Benutzerordner nicht gefunden!"}), 404
 
-    input_file = os.path.join(user_folder, "aufgabe2.dat")
-    expected_file = os.path.join(user_folder, "expected.txt")
-    main_exec = os.path.join(user_folder, "main.out")
+    user_file = os.path.join(user_folder, "cholesky.c")
+    user_object = os.path.join(user_folder, "cholesky.o")
+    user_executable = os.path.join(user_folder, "main_user.out")
+
+    if not os.path.exists(user_file):
+        return jsonify({"error": "cholesky.c wurde nicht hochgeladen!"}), 400
 
     try:
-        # 1. `make` ausführen
-        make_command = ["make", "-C", user_folder]
-        make_result = subprocess.run(make_command, capture_output=True, text=True)
+        # ✅ Kompiliere `cholesky.c`
+        compile_cholesky = ["gcc", "-c", "-fPIC", user_file, "-o", user_object]
+        compile_result = subprocess.run(compile_cholesky, capture_output=True, text=True)
 
-        # ✅ Volle Ausgabe von `make` zurückgeben
-        if make_result.returncode != 0:
-            return jsonify({
-                "error": "Fehler beim Kompilieren",
-                "stderr": make_result.stderr,
-                "stdout": make_result.stdout
-            })
+        if compile_result.returncode != 0:
+            return jsonify({"error": "Fehler beim Kompilieren von cholesky.c", "details": compile_result.stderr})
 
-        # 2. Programm ausführen
-        run_command = [main_exec, input_file, expected_file]
+        # ✅ Kompiliere `main.c`
+        main_object = os.path.join(user_folder, "main.o")
+        compile_main = ["gcc", "-c", "-fPIC", "compilation/main.c", "-o", main_object]
+        main_result = subprocess.run(compile_main, capture_output=True, text=True)
+
+        if main_result.returncode != 0:
+            return jsonify({"error": "Fehler beim Kompilieren von main.c", "details": main_result.stderr})
+
+        # ✅ Verlinke `main.o` + `cholesky.o` mit `global_lib.a`
+        link_command = [
+            "gcc", "-o", user_executable, main_object, user_object,
+            "compilation/global_lib.a", "-lm"
+        ]
+        link_result = subprocess.run(link_command, capture_output=True, text=True)
+
+        if link_result.returncode != 0:
+            return jsonify({"error": "Fehler beim Linken mit global_lib.a", "details": link_result.stderr})
+
+        # ✅ Führe `main_user.out` aus
+        input_file = os.path.join("compilation", "aufgabe2.dat")
+        expected_file = os.path.join("compilation", "expected.txt")
+        run_command = [user_executable, input_file, expected_file]
         run_result = subprocess.run(run_command, capture_output=True, text=True)
+
+        # 🔹 Falls `stdout` leer ist, ersetze `undefined` mit einer Nachricht
+        stdout_output = run_result.stdout.strip() if run_result.stdout.strip() else "⚠️ Keine Ausgabe"
+        stderr_output = run_result.stderr.strip() if run_result.stderr.strip() else "✅ Kein Fehler"
 
         return jsonify({
             "message": "Programm erfolgreich ausgeführt",
-            "stdout": run_result.stdout,
-            "stderr": run_result.stderr
+            "stdout": stdout_output,
+            "stderr": stderr_output
         })
 
     except Exception as e:
         return jsonify({"error": str(e)})
+
+
+
 
 
 

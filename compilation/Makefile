@@ -1,45 +1,23 @@
-# Hauptprogramm
-MAIN=main
-
-# Alle Programme
-OBJECTS=$(MAIN).o ausgabe.o matrix_vector.o cholesky.o
-
-# Welcher C-Compiler
+# Compiler & Optionen
 CC=gcc
-# CC=icc
-# Weitere zuschaltbare Optionen
-CCFLAGS=-O -Wall
-# Alternativ Debugger-Informationen generieren
-#CCFLAGS=-g
+CCFLAGS=-O -Wall -fPIC  # ✅ -fPIC für Position Independent Code
+AR=ar
+ARFLAGS=rcs
 
-# Wo liegen die Headerdateien
-INCDIR=-I.
+# Globale Objekte (werden nur einmal kompiliert)
+GLOBAL_OBJECTS=ausgabe.o matrix_vector.o
+LIBRARY=global_lib.a
 
-# Welcher Linker
-LD=$(CC)
-# Weitere zuschaltbare Optionen
-LDFLAGS=-O
-# Wo liegen die Bibliotheken
-LIBDIR=
+# Ziel: Kompiliere globale Dateien in eine statische Bibliothek
+all: $(LIBRARY)
 
-# Alle benötigten Bibliotheken
-LIBS= -lm
+$(LIBRARY): $(GLOBAL_OBJECTS)
+	$(AR) $(ARFLAGS) $@ $^
 
-# Name der Input-Datei
-INPUT_FILE=aufgabe2.dat
-
-# Name der Datei mit den erwarteten Ergebnissen
-EXPECTED_FILE=expected.txt
-
-# Ziel des Makefiles
-$(MAIN).out: $(OBJECTS)
-	$(LD) -o $(MAIN).out $(OBJECTS) $(LIBDIR) $(LIBS)
-	./$(MAIN).out $(INPUT_FILE) $(EXPECTED_FILE) 
-
-# Wie erzeugt man C-Objektdateien
-$(OBJECTS): %.o: %.c
-	$(CC) $(INCDIR) -c $(CFLAGS) $< -o $@
+# Generiere .o-Dateien aus .c-Dateien
+%.o: %.c
+	$(CC) $(CCFLAGS) -c $< -o $@
 
 clean:
-	rm *.o
-	rm *.out
+	rm -f *.o
+	rm -f $(LIBRARY)
