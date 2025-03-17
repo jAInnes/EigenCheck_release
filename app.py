@@ -142,15 +142,18 @@ def check_status():
 
 
 
-
 @app.route("/upload", methods=["POST"])
 def upload_file():
-    """Speichert nur den User-Code und nutzt globale Dateien."""
+    """Ersetzt vorherige Dateien und speichert den neuesten Upload als `user_code.c`."""
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
     username = session.get("username")
     user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
+    
+    # ✅ Lösche alte Dateien vor jedem Upload
+    if os.path.exists(user_folder):
+        shutil.rmtree(user_folder)
     os.makedirs(user_folder, exist_ok=True)
 
     if "file" not in request.files:
@@ -160,15 +163,16 @@ def upload_file():
     if file.filename == "":
         return jsonify({"error": "Keine Datei ausgewählt"}), 400
 
+    # ✅ Speichere alle `.c`-Dateien, aber benenne sie in `user_code.c` um
     filename = secure_filename(file.filename)
     if not filename.endswith(".c"):
         return jsonify({"error": "Nur C-Dateien erlaubt!"}), 400
 
-    # ✅ Speichere nur den User-Code in seinem Ordner
-    filepath = os.path.join(user_folder, filename)
+    filepath = os.path.join(user_folder, "user_code.c")
     file.save(filepath)
 
-    return jsonify({"message": f"Datei {filename} erfolgreich hochgeladen", "path": filepath}), 200
+    return jsonify({"message": f"Datei erfolgreich hochgeladen und gespeichert als `user_code.c`", "path": filepath}), 200
+
 
 
 
@@ -184,33 +188,29 @@ def get_file(filename):
 
 
 # ========================== COMPILATION & EXECUTION ==========================
-
 @app.route("/run", methods=["POST"])
 def run_c_program():
-    """Kompiliert nur `cholesky.c` des Users und führt `main.out` mit diesem aus."""
+    """Kompiliert `user_code.c` des Users und führt `main.out` mit diesem aus."""
     if "logged_in" not in session or not session["logged_in"]:
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
     username = session.get("username")
     user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
-
-    if not os.path.exists(user_folder):
-        return jsonify({"error": "Benutzerordner nicht gefunden!"}), 404
-
-    user_file = os.path.join(user_folder, "cholesky.c")
-    user_object = os.path.join(user_folder, "cholesky.o")
+    
+    user_file = os.path.join(user_folder, "user_code.c")  # ✅ Immer die neueste Datei verwenden
+    user_object = os.path.join(user_folder, "user_code.o")
     user_executable = os.path.join(user_folder, "main_user.out")
 
     if not os.path.exists(user_file):
-        return jsonify({"error": "cholesky.c wurde nicht hochgeladen!"}), 400
+        return jsonify({"error": "Es wurde keine C-Datei hochgeladen!"}), 400
 
     try:
-        # ✅ Kompiliere `cholesky.c`
-        compile_cholesky = ["gcc", "-c", "-fPIC", user_file, "-o", user_object]
-        compile_result = subprocess.run(compile_cholesky, capture_output=True, text=True)
+        # ✅ Kompiliere `user_code.c`
+        compile_cmd = ["gcc", "-c", "-fPIC", user_file, "-o", user_object]
+        compile_result = subprocess.run(compile_cmd, capture_output=True, text=True)
 
         if compile_result.returncode != 0:
-            return jsonify({"error": "Fehler beim Kompilieren von cholesky.c", "details": compile_result.stderr})
+            return jsonify({"error": "Fehler beim Kompilieren von user_code.c", "details": compile_result.stderr})
 
         # ✅ Kompiliere `main.c`
         main_object = os.path.join(user_folder, "main.o")
@@ -220,7 +220,7 @@ def run_c_program():
         if main_result.returncode != 0:
             return jsonify({"error": "Fehler beim Kompilieren von main.c", "details": main_result.stderr})
 
-        # ✅ Verlinke `main.o` + `cholesky.o` mit `global_lib.a`
+        # ✅ Verlinke `main.o` + `user_code.o` mit `global_lib.a`
         link_command = [
             "gcc", "-o", user_executable, main_object, user_object,
             "compilation/global_lib.a", "-lm"
@@ -236,7 +236,7 @@ def run_c_program():
         run_command = [user_executable, input_file, expected_file]
         run_result = subprocess.run(run_command, capture_output=True, text=True)
 
-        # 🔹 Falls `stdout` leer ist, ersetze `undefined` mit einer Nachricht
+        # ✅ Falls `stdout` leer ist, ersetze `undefined` mit einer Nachricht
         stdout_output = run_result.stdout.strip() if run_result.stdout.strip() else "⚠️ Keine Ausgabe"
         stderr_output = run_result.stderr.strip() if run_result.stderr.strip() else "✅ Kein Fehler"
 
@@ -248,7 +248,6 @@ def run_c_program():
 
     except Exception as e:
         return jsonify({"error": str(e)})
-
 
 
 

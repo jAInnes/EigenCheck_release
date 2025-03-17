@@ -29,3 +29,4 @@ uploads/
 .git/
 .gitignore
 users.json
+compilation/global_lib.a
