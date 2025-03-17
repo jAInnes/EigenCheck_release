@@ -8,7 +8,12 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import shutil  
 
-COMPILATION_FOLDER = "compilation"
+COMPILATION_FOLDER = "a8_compilation"
+UPLOAD_FOLDER = "uploads"
+USER_DB = "users.json"
+os.makedirs(COMPILATION_FOLDER, exist_ok=True)
+os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 def compile_global_files():
     """Kompiliert die gemeinsamen Dateien in `compilation/`."""
@@ -195,7 +200,7 @@ def run_c_program():
         return jsonify({"error": "Nicht eingeloggt"}), 401
 
     username = session.get("username")
-    user_folder = os.path.join(app.config["UPLOAD_FOLDER"], username)
+    user_folder = os.path.join(UPLOAD_FOLDER, username)
     
     user_file = os.path.join(user_folder, "user_code.c")  # ✅ Immer die neueste Datei verwenden
     user_object = os.path.join(user_folder, "user_code.o")
@@ -212,9 +217,9 @@ def run_c_program():
         if compile_result.returncode != 0:
             return jsonify({"error": "Fehler beim Kompilieren von user_code.c", "details": compile_result.stderr})
 
-        # ✅ Kompiliere `main.c`
+        # ✅ Kompiliere `main.c` (Nutzung von `COMPILATION_FOLDER`)
         main_object = os.path.join(user_folder, "main.o")
-        compile_main = ["gcc", "-c", "-fPIC", "compilation/main.c", "-o", main_object]
+        compile_main = ["gcc", "-c", "-fPIC", os.path.join(COMPILATION_FOLDER, "main.c"), "-o", main_object]
         main_result = subprocess.run(compile_main, capture_output=True, text=True)
 
         if main_result.returncode != 0:
@@ -223,7 +228,7 @@ def run_c_program():
         # ✅ Verlinke `main.o` + `user_code.o` mit `global_lib.a`
         link_command = [
             "gcc", "-o", user_executable, main_object, user_object,
-            "compilation/global_lib.a", "-lm"
+            os.path.join(COMPILATION_FOLDER, "global_lib.a"), "-lm"
         ]
         link_result = subprocess.run(link_command, capture_output=True, text=True)
 
@@ -231,8 +236,8 @@ def run_c_program():
             return jsonify({"error": "Fehler beim Linken mit global_lib.a", "details": link_result.stderr})
 
         # ✅ Führe `main_user.out` aus
-        input_file = os.path.join("compilation", "aufgabe2.dat")
-        expected_file = os.path.join("compilation", "expected.txt")
+        input_file = os.path.join(COMPILATION_FOLDER, "aufgabe2.dat")
+        expected_file = os.path.join(COMPILATION_FOLDER, "expected.txt")
         run_command = [user_executable, input_file, expected_file]
         run_result = subprocess.run(run_command, capture_output=True, text=True)
 
