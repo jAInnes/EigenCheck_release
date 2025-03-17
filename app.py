@@ -8,11 +8,31 @@ from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import shutil  
 
-COMPILATION_FOLDER = "a8_compilation"
-UPLOAD_FOLDER = "uploads"
-USER_DB = "users.json"
+def load_config():
+    """Lädt Konfiguration aus `properties.txt`."""
+    config = {}
+    if os.path.exists("properties.txt"):
+        with open("properties.txt", "r") as f:
+            for line in f:
+                if line.strip() and not line.startswith("#"):  # Kommentare & leere Zeilen ignorieren
+                    key, value = line.strip().split("=")
+                    config[key.strip()] = value.strip()
+    return config
+
+# ✅ Lese Konfiguration aus `properties.txt`
+config = load_config()
+
+# ✅ Setze globale Variablen mit Standardwerten, falls nicht in `properties.txt`
+COMPILATION_FOLDER = config.get("COMPILATION_FOLDER", "compilation")
+UPLOAD_FOLDER = config.get("UPLOAD_FOLDER", "uploads")
+USER_DB = config.get("USER_DB", "users.json")
+INPUT_FILE = config.get("INPUT_FILE", "aufgabe2.dat")
+EXPECTED_FILE = config.get("EXPECTED_FILE", "expected.txt")
+
+# ✅ Stelle sicher, dass die Verzeichnisse existieren
 os.makedirs(COMPILATION_FOLDER, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
+
 
 
 def compile_global_files():
@@ -217,7 +237,7 @@ def run_c_program():
         if compile_result.returncode != 0:
             return jsonify({"error": "Fehler beim Kompilieren von user_code.c", "details": compile_result.stderr})
 
-        # ✅ Kompiliere `main.c` (Nutzung von `COMPILATION_FOLDER`)
+        # ✅ Kompiliere `main.c`
         main_object = os.path.join(user_folder, "main.o")
         compile_main = ["gcc", "-c", "-fPIC", os.path.join(COMPILATION_FOLDER, "main.c"), "-o", main_object]
         main_result = subprocess.run(compile_main, capture_output=True, text=True)
@@ -236,8 +256,8 @@ def run_c_program():
             return jsonify({"error": "Fehler beim Linken mit global_lib.a", "details": link_result.stderr})
 
         # ✅ Führe `main_user.out` aus
-        input_file = os.path.join(COMPILATION_FOLDER, "aufgabe2.dat")
-        expected_file = os.path.join(COMPILATION_FOLDER, "expected.txt")
+        input_file = os.path.join(COMPILATION_FOLDER, INPUT_FILE)
+        expected_file = os.path.join(COMPILATION_FOLDER, EXPECTED_FILE)
         run_command = [user_executable, input_file, expected_file]
         run_result = subprocess.run(run_command, capture_output=True, text=True)
 
@@ -253,8 +273,6 @@ def run_c_program():
 
     except Exception as e:
         return jsonify({"error": str(e)})
-
-
 
 
 
