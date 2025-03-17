@@ -70,13 +70,10 @@ int main (int argc, char* argv[])
 
    // Hier wird der Dateiname für die erwartete Ausgabe übergeben
    if(argc == 3){
-      printf("(main) Ausgabe wird in Datei %s geschrieben\n", argv[2]);
-      print_vector(x, n);  // ✅ Entferne das dritte Argument
+       print_vector(x, n, argv[2]);
    } else{
-      printf("(main) Standardausgabe nach expected.txt\n");
-      print_vector(x, n);  // ✅ Entferne das dritte Argument
+       print_vector(x, n, "expected.txt");
    }
-   
    printf("\n");
    
    free_matrix(a, n);

@@ -21,3 +21,5 @@ $(LIBRARY): $(GLOBAL_OBJECTS)
 clean:
 	rm -f *.o
 	rm -f $(LIBRARY)
+
+# c -O -Wall -I. -c ausgabe.c -o ausgabe.o in cd compilation anwenden bei änderungen in Ausgabe.c
