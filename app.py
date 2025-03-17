@@ -62,8 +62,7 @@ CORS(app, supports_credentials=True)
 app.secret_key = "supersecretkey"
 
 # Configuration
-UPLOAD_FOLDER = "uploads"
-USER_DB = "users.json"
+
 app.config["UPLOAD_FOLDER"] = UPLOAD_FOLDER
 app.config["SESSION_COOKIE_HTTPONLY"] = False  
 app.config["SESSION_COOKIE_SAMESITE"] = "None"  
