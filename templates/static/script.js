@@ -19,7 +19,7 @@ function login() {
             sessionStorage.setItem("loggedIn", "true");
             sessionStorage.setItem("username", data.username);
             if (data.username === "admin") {
-                showAdminSection(data.users);
+                showAdminSection(data.users, data.user_files);
             } else {
                 showUploadSection();
             }
@@ -34,17 +34,17 @@ function showUploadSection() {
 }
 
 // Show Admin Section
-function showAdminSection(users) {
+function showAdminSection(users, userFiles) {
     document.getElementById("adminSection").classList.remove("hidden");
     document.getElementById("uploadSection").classList.add("hidden");
     document.getElementById("runSection").classList.add("hidden");
 
     let userList = document.getElementById("userList");
-    userList.innerHTML = "";
+    userList.innerHTML = "<tr><th>Benutzername</th><th>Abgabe</th><th>Tests</th></tr>";
     for (let username in users) {
         if (username !== "admin") {
-            let listItem = document.createElement("li");
-            listItem.innerText = `User: ${username} | Password: ${users[username]}`;
+            let listItem = document.createElement("tr");
+            listItem.innerHTML = `<td>${username}</td><td>${userFiles[username] ? "✔️" : "❌"}</td>`;
             userList.appendChild(listItem);
         }
     }

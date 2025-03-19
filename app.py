@@ -7,6 +7,7 @@ import subprocess
 from werkzeug.utils import secure_filename
 from flask_cors import CORS
 import shutil  
+import glob
 
 def load_config():
     """Lädt Konfiguration aus `properties.txt`."""
@@ -127,7 +128,18 @@ def load_users():
             json.dump(users, f, indent=4)
 
         return users["users"]
-
+    
+def check_user_files(users):
+    """Check if users have uploaded files."""
+    user_files = {}
+    for username in users:
+        if username != "admin":
+            file_path = f"uploads/{username}/*.c"
+            files = glob.glob(file_path)
+            file_exists = len(files) > 0
+            print(f"Checking path: {file_path}, Exists: {file_exists}")  # Debugging output
+            user_files[username] = file_exists
+    return user_files
 # Load users at startup
 users = load_users()
 
@@ -145,11 +157,11 @@ def login():
         session["username"] = data["username"]
         session.permanent = True  
         if data["username"] == "admin":
-            return jsonify({"message": "Admin Login erfolgreich", "status": "success", "username": data["username"], "users": users})
+            user_files = check_user_files(users)
+            return jsonify({"message": "Admin Login erfolgreich", "status": "success", "username": data["username"], "users": users, "user_files": user_files})
         return jsonify({"message": "Login erfolgreich", "status": "success", "username": data["username"]})
 
     return jsonify({"message": "Falscher Benutzername oder Passwort", "status": "error"}), 401
-
 @app.route("/users", methods=["GET"])
 def get_users():
     """Get the list of users."""
