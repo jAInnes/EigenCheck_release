@@ -92,6 +92,7 @@ def load_users():
     if not os.path.exists(USER_DB):
         print("users.json not found, creating it now...")
         users = {"users": create_test_users(5)}
+        users["users"]["admin"] = "adminpassword"  # Add admin user
         with open(USER_DB, "w") as f:
             json.dump(users, f, indent=4)
 
@@ -107,6 +108,11 @@ def load_users():
             users = json.load(f)
             if "users" not in users:
                 raise KeyError
+        # Ensure admin user is present
+        if "admin" not in users["users"]:
+            users["users"]["admin"] = "adminpassword"
+            with open(USER_DB, "w") as f:
+                json.dump(users, f, indent=4)
 
         # ✅ Print loaded users and passwords
         print("Loaded users:")
@@ -142,6 +148,8 @@ def login():
         session["logged_in"] = True
         session["username"] = data["username"]
         session.permanent = True  
+        if data["username"] == "admin":
+            return jsonify({"message": "Admin Login erfolgreich", "status": "success", "username": data["username"]})
         return jsonify({"message": "Login erfolgreich", "status": "success", "username": data["username"]})
 
     return jsonify({"message": "Falscher Benutzername oder Passwort", "status": "error"}), 401
