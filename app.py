@@ -80,12 +80,10 @@ def generate_password(length=8):
     chars = string.ascii_letters + string.digits
     return "".join(random.choice(chars) for _ in range(length))
 
-
 def create_test_users(count=5):
     """Create test users with randomly generated passwords."""
     users = {f"testuser{i}": generate_password() for i in range(1, count + 1)}
     return users
-
 
 def load_users():
     """Load or initialize the user database."""
@@ -108,6 +106,7 @@ def load_users():
             users = json.load(f)
             if "users" not in users:
                 raise KeyError
+
         # Ensure admin user is present
         if "admin" not in users["users"]:
             users["users"]["admin"] = "adminpassword"
@@ -123,17 +122,14 @@ def load_users():
 
     except (json.JSONDecodeError, KeyError):
         print("users.json was corrupted. Resetting it...")
-        users = {"users": {"admin": "password123"}}
+        users = {"users": {"admin": "adminpassword"}}
         with open(USER_DB, "w") as f:
             json.dump(users, f, indent=4)
 
         return users["users"]
 
-
-
 # Load users at startup
 users = load_users()
-
 
 @app.route("/login", methods=["POST"])
 def login():
@@ -149,25 +145,16 @@ def login():
         session["username"] = data["username"]
         session.permanent = True  
         if data["username"] == "admin":
-            return jsonify({"message": "Admin Login erfolgreich", "status": "success", "username": data["username"]})
+            return jsonify({"message": "Admin Login erfolgreich", "status": "success", "username": data["username"], "users": users})
         return jsonify({"message": "Login erfolgreich", "status": "success", "username": data["username"]})
 
     return jsonify({"message": "Falscher Benutzername oder Passwort", "status": "error"}), 401
 
-
-@app.route("/logout", methods=["POST"])
-def logout():
-    """Handle user logout."""
-    session.clear()
-    return jsonify({"message": "Logout erfolgreich", "status": "success"})
-
-
-@app.route("/status", methods=["GET"])
-def check_status():
-    """Check if a user is logged in."""
-    if "logged_in" in session and session["logged_in"]:
-        return jsonify({"logged_in": True, "username": session["username"]})
-    return jsonify({"logged_in": False})
+@app.route("/users", methods=["GET"])
+def get_users():
+    """Get the list of users."""
+    users = load_users()
+    return jsonify({"users": users})
 
 
 # ========================== FILE UPLOAD & RETRIEVAL ==========================

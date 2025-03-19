@@ -1,7 +1,7 @@
-//  Backend URL (Change if needed)
+// Backend URL (Change if needed)
 const BACKEND_URL = "http://127.0.0.1:5000";
 
-//  Login Function
+// Login Function
 function login() {
     let username = document.getElementById("username").value;
     let password = document.getElementById("password").value;
@@ -18,18 +18,39 @@ function login() {
         if (data.status === "success") {
             sessionStorage.setItem("loggedIn", "true");
             sessionStorage.setItem("username", data.username);
-            showUploadSection();
+            if (data.username === "admin") {
+                showAdminSection(data.users);
+            } else {
+                showUploadSection();
+            }
         }
     })
     .catch(error => console.error("❌ Fehler beim Login:", error));
 }
 
-//  Show Upload Section after Login
+// Show Upload Section after Login
 function showUploadSection() {
     document.getElementById("uploadSection").classList.remove("hidden");
 }
 
-//  Upload File Function
+// Show Admin Section
+function showAdminSection(users) {
+    document.getElementById("adminSection").classList.remove("hidden");
+    document.getElementById("uploadSection").classList.add("hidden");
+    document.getElementById("runSection").classList.add("hidden");
+
+    let userList = document.getElementById("userList");
+    userList.innerHTML = "";
+    for (let username in users) {
+        if (username !== "admin") {
+            let listItem = document.createElement("li");
+            listItem.innerText = `User: ${username} | Password: ${users[username]}`;
+            userList.appendChild(listItem);
+        }
+    }
+}
+
+// Upload File Function
 function uploadFile() {
     if (sessionStorage.getItem("loggedIn") !== "true") {
         alert("Bitte zuerst einloggen!");
@@ -60,7 +81,7 @@ function uploadFile() {
     .catch(error => console.error("❌ Fehler beim Hochladen:", error));
 }
 
-//  Run C Program Function
+// Run C Program Function
 function runCProgram() {
     if (sessionStorage.getItem("loggedIn") !== "true") {
         alert("Bitte zuerst einloggen!");
