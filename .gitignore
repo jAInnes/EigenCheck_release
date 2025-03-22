@@ -30,3 +30,4 @@ uploads/
 .gitignore
 users.json
 compilation/global_lib.a
+lib/libmatrix_vector.so
