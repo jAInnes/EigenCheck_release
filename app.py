@@ -29,6 +29,8 @@ UPLOAD_FOLDER = config.get("UPLOAD_FOLDER", "uploads")
 USER_DB = config.get("USER_DB", "users.json")
 INPUT_FILE = config.get("INPUT_FILE", "aufgabe2.dat")
 EXPECTED_FILE = config.get("EXPECTED_FILE", "expected.txt")
+USE_STATIC_LIB = config.get("USE_STATIC_LIB", "false").lower() == "true"
+LIB_FOLDER = config.get("LIB_FOLDER", "lib")
 
 # ✅ Stelle sicher, dass die Verzeichnisse existieren
 os.makedirs(COMPILATION_FOLDER, exist_ok=True)
@@ -277,10 +279,25 @@ def run_c_program():
 
         # ✅ Verlinke mit libmatrix.a (aus lib_path)
         lib_path = config.get("LIB_FOLDER", "lib")
-        link_command = [
-            "gcc", "-o", user_executable, main_object, user_object,
-            os.path.join(lib_path, "libmatrix.a"), "-lm"
-        ]
+        if USE_STATIC_LIB:
+          link_command = [
+              "gcc", "-o", user_executable, main_object, user_object,
+               os.path.join(LIB_FOLDER, "libmatrix.a"), "-lm"
+    ]
+        else:
+         # Verlinke alle .o-Dateien im Compilation-Ordner (z. B. ausgabe.o, matrix_vector.o, ...)
+          object_files = [
+                  os.path.join(COMPILATION_FOLDER, f)
+                  for f in os.listdir(COMPILATION_FOLDER)
+                  if f.endswith(".o")
+    ]
+          link_command = [
+             "gcc", "-o", user_executable, main_object, user_object
+          ] + object_files + ["-lm"]
+
+
+
+
         link_result = subprocess.run(link_command, capture_output=True, text=True)
 
         if link_result.returncode != 0:
