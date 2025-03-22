@@ -1,37 +1,22 @@
-# Alle Programme
-SOURCES= $(wildcard *.c)
-OBJECTS= $(patsubst %.c,%.o,$(SOURCES)) 
+# Compiler
+CC = gcc
+CFLAGS = -Wall -c
 
-# Welcher C-Compiler
-CC=gcc
-# CC=icc
-# Weitere zuschaltbare Optionen
-CFLAGS=-fPIC
-# Alternativ Debugger-Informationen generieren
-#CCFLAGS=-g
+# Dateien
+OBJS = matrix_vector.o
+LIB = libmatrix.a
 
-# Wo liegen die Headerdateien
-INCDIR=-I.
+# Ziel: Bibliothek erzeugen
+all: $(LIB)
 
-# Welcher Linker
-LD=ld
-# Weitere zuschaltbare Optionen
-LDFLAGS=-shared
-# Wo liegen die Bibliotheken
-LIBDIR=
+# Bibliothek aus Objektdateien
+$(LIB): $(OBJS)
+	ar rcs $(LIB) $(OBJS)
 
-# Alle benötigten Bibliotheken
-#LDLIBS= -lm 
-LIB=libmatrix_vector.so
+# Objektdateien aus Quellen
+matrix_vector.o: matrix_vector.c matrix_vector.h
+	$(CC) $(CFLAGS) matrix_vector.c -o matrix_vector.o
 
-# Ziel des Makefiles
-lib: $(OBJECTS) 
-	$(LD) $(LDFLAGS) $(OBJECTS) $(LIBDIR) -o $(LIB)
-
-# Wie erzeugt man C-Objektdateien
-$(OBJECTS): %.o: %.c
-	$(CC) $(INCDIR) -c $(CFLAGS) $< -o $@
-
+# Clean
 clean:
-	-rm *.o
-	-rm $(LIB)
+	rm -f *.o *.a

@@ -1,35 +1,20 @@
-# Hauptprogramm
-MAIN=main
+# a3_compilation/main.make
 
-# Alle Programme
-OBJECTS=$(MAIN).o qr.o
+CC = gcc
+CFLAGS = -Wall -c -I../lib      # ← include ../lib für Header-Dateien
+LDFLAGS = -lm
+LIB = ../lib/libmatrix.a
 
-# Welcher C-Compiler
-CC=gcc
-# Weitere zuschaltbare Optionen
-CFLAGS=-Wall -fPIC
+all: main.out
 
-# Wo liegen die Headerdateien
-INCDIR=-I. -I../lib
+main.out: main.o qr.o
+	$(CC) -o main.out main.o qr.o $(LIB) $(LDFLAGS)
 
-# Welcher Linker
-LD=$(CC)
-# Wo liegen die Bibliotheken
-LIBDIR=../lib
-# Weitere zuschaltbare Optionen
-LDFLAGS=-Wl,-rpath=$(LIBDIR)
+main.o: main.c
+	$(CC) $(CFLAGS) main.c -o main.o
 
-# Alle benötigten Bibliotheken
-LDLIBS=-lmatrix_vector -lm
+qr.o: qr.c qr.h
+	$(CC) $(CFLAGS) qr.c -o qr.o
 
-# Ziel des Makefiles
-$(MAIN).out: $(OBJECTS) libmatrix_vector.so
-	$(LD) -o $(MAIN).out $(OBJECTS) -L$(LIBDIR) $(LDLIBS) $(LDFLAGS)
-
-# Ziel für das Erstellen der Bibliothek
-libmatrix_vector.so:
-	cd $(LIBDIR); make
-
-# Wie erzeugt man C-Objektdateien
-$(OBJECTS): %.o: %.c
-	$(CC) $(INCDIR) -c $(CFLAGS) $< -o
+clean:
+	rm -f *.o *.out

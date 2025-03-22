@@ -1,5 +1,6 @@
-COMPILATION_FOLDER=a8_compilation
+COMPILATION_FOLDER=a3_compilation
 UPLOAD_FOLDER=uploads
 USER_DB=users.json
-INPUT_FILE=aufgabe2.dat
-EXPECTED_FILE=expected_copy.txt
+INPUT_FILE=qr.dat
+EXPECTED_FILE=none
+LIB_FOLDER=lib

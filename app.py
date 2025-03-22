@@ -34,10 +34,21 @@ EXPECTED_FILE = config.get("EXPECTED_FILE", "expected.txt")
 os.makedirs(COMPILATION_FOLDER, exist_ok=True)
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
+def compile_lib_folder():
+    """Kompiliert die Bibliothek aus dem konfigurierten lib-Verzeichnis."""
+    lib_path = config.get("LIB_FOLDER", "lib")
+    make_result = subprocess.run(["make", "-C", lib_path], capture_output=True, text=True)
+    if make_result.returncode == 0:
+        print("✅ Bibliothek erfolgreich kompiliert.")
+    else:
+        print("❌ Fehler beim Kompilieren der Bibliothek:", make_result.stderr)
+
+
+# Beim Start:
+compile_lib_folder()
 
 
 def compile_global_files():
-    """Kompiliert die gemeinsamen Dateien in `compilation/`."""
     if not os.path.exists(COMPILATION_FOLDER):
         os.makedirs(COMPILATION_FOLDER)
 
@@ -49,12 +60,11 @@ def compile_global_files():
             print("❌ Fehler beim globalen Kompilieren:", make_result.stderr)
         else:
             print("✅ Globale Dateien erfolgreich kompiliert.")
-
     except Exception as e:
         print(f"❌ Fehler beim globalen Kompilieren: {str(e)}")
 
-# ✅ Kompiliere globale Dateien beim Start
 compile_global_files()
+
 
 # Initialize Flask app
 app = Flask(__name__, template_folder="templates", static_folder="templates/static")
@@ -228,7 +238,7 @@ def run_c_program():
     username = session.get("username")
     user_folder = os.path.join(UPLOAD_FOLDER, username)
     
-    user_file = os.path.join(user_folder, "user_code.c")  # ✅ Immer die neueste Datei verwenden
+    user_file = os.path.join(user_folder, "user_code.c")
     user_object = os.path.join(user_folder, "user_code.o")
     user_executable = os.path.join(user_folder, "main_user.out")
 
@@ -236,38 +246,60 @@ def run_c_program():
         return jsonify({"error": "Es wurde keine C-Datei hochgeladen!"}), 400
 
     try:
-        # ✅ Kompiliere `user_code.c`
-        compile_cmd = ["gcc", "-c", "-fPIC", user_file, "-o", user_object]
+        # ✅ Kompiliere user_code.c
+        lib_path = config.get("LIB_FOLDER", "lib")  # Das kann z. B. lib sein
+        compile_cmd = ["gcc", "-I" + lib_path, "-c", "-fPIC", user_file, "-o", user_object]
+
         compile_result = subprocess.run(compile_cmd, capture_output=True, text=True)
 
         if compile_result.returncode != 0:
-            return jsonify({"error": "Fehler beim Kompilieren von user_code.c", "details": compile_result.stderr})
+            return jsonify({
+                "error": "Fehler beim Kompilieren von user_code.c",
+                "details": compile_result.stderr
+            })
 
-        # ✅ Kompiliere `main.c`
+        # ✅ Kompiliere main.c aus der Aufgaben-Config
         main_object = os.path.join(user_folder, "main.o")
-        compile_main = ["gcc", "-c", "-fPIC", os.path.join(COMPILATION_FOLDER, "main.c"), "-o", main_object]
+        main_c_path = os.path.join(COMPILATION_FOLDER, "main.c")
+        compile_main = [
+             "gcc", "-I" + lib_path, "-c", "-fPIC",
+             os.path.join(COMPILATION_FOLDER, "main.c"),
+             "-o", main_object
+]
+
         main_result = subprocess.run(compile_main, capture_output=True, text=True)
 
         if main_result.returncode != 0:
-            return jsonify({"error": "Fehler beim Kompilieren von main.c", "details": main_result.stderr})
+            return jsonify({
+                "error": "Fehler beim Kompilieren von main.c",
+                "details": main_result.stderr
+            })
 
-        # ✅ Verlinke `main.o` + `user_code.o` mit `global_lib.a`
+        # ✅ Verlinke mit libmatrix.a (aus lib_path)
+        lib_path = config.get("LIB_FOLDER", "lib")
         link_command = [
             "gcc", "-o", user_executable, main_object, user_object,
-            os.path.join(COMPILATION_FOLDER, "global_lib.a"), "-lm"
+            os.path.join(lib_path, "libmatrix.a"), "-lm"
         ]
         link_result = subprocess.run(link_command, capture_output=True, text=True)
 
         if link_result.returncode != 0:
-            return jsonify({"error": "Fehler beim Linken mit global_lib.a", "details": link_result.stderr})
+            return jsonify({
+                "error": "Fehler beim Linken mit libmatrix.a",
+                "details": link_result.stderr
+            })
 
-        # ✅ Führe `main_user.out` aus
+        # ✅ Programm ausführen mit INPUT_FILE (und optional EXPECTED_FILE)
         input_file = os.path.join(COMPILATION_FOLDER, INPUT_FILE)
-        expected_file = os.path.join(COMPILATION_FOLDER, EXPECTED_FILE)
-        run_command = [user_executable, input_file, expected_file]
+
+        if EXPECTED_FILE.lower() == "none" or EXPECTED_FILE.strip() == "":
+            run_command = [user_executable, input_file]
+        else:
+            expected_file = os.path.join(COMPILATION_FOLDER, EXPECTED_FILE)
+            run_command = [user_executable, input_file, expected_file]
+
         run_result = subprocess.run(run_command, capture_output=True, text=True)
 
-        # ✅ Falls `stdout` leer ist, ersetze `undefined` mit einer Nachricht
         stdout_output = run_result.stdout.strip() if run_result.stdout.strip() else "⚠️ Keine Ausgabe"
         stderr_output = run_result.stderr.strip() if run_result.stderr.strip() else "✅ Kein Fehler"
 
@@ -279,7 +311,6 @@ def run_c_program():
 
     except Exception as e:
         return jsonify({"error": str(e)})
-
 
 
 # ========================== DEBUGGING & SERVER START ==========================

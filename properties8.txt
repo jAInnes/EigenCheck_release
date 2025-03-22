@@ -1,0 +1,5 @@
+COMPILATION_FOLDER=a8_compilation
+UPLOAD_FOLDER=uploads
+USER_DB=users.json
+INPUT_FILE=aufgabe2.dat
+EXPECTED_FILE=expected_copy.txt
